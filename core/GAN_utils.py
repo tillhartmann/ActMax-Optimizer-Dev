@@ -25,6 +25,12 @@ if platform == "linux":  # CHPC cluster
         homedir = os.environ["SCRATCH1"]
         netsdir = join(homedir, "torch/checkpoints")  # CHPC
         load_urls = True # note it will try to load from $TORCH_HOME\checkpoints\"upconvGAN_%s.pt"%"fc6"
+    elif 'ODIN' in os.environ['HOSTNAME'].upper():
+        homedir = os.path.expanduser('~/n/Code')
+        netsdir = join(homedir, 'nets')  # CHPC
+    elif 'JORDAN' in os.environ['HOSTNAME'].upper():
+        homedir = '/nas/code/ponce_lab/homedir'
+        netsdir = '/nas/code/ponce_lab/nets' # rsynced from n/Code/nets/
     else:
         load_urls = True
     # ckpt_path = {"vgg16": "/scratch/binxu/torch/vgg16-397923af.pth"}

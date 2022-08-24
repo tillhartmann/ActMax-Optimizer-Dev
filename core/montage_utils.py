@@ -1,5 +1,5 @@
 import numpy as np
-from skimage.transform import resize
+import cv2
 import matplotlib.pylab as plt
 from torchvision.utils import make_grid
 from torchvision.transforms import ToPILImage, ToTensor
@@ -52,7 +52,7 @@ def build_montages(image_list, image_shape, montage_shape, transpose=True):
         # if type(img).__module__ != np.__name__:
         #     raise Exception('input of type {} is not a valid numpy array'.format(type(img)))
         start_new_img = False
-        img = resize(img, image_shape)
+        img = cv2.resize(img, image_shape)
         if img.dtype in (np.uint8, np.int) and img.max() > 1.0:  # float 0,1 image
             img = (img / 255.0).astype(np.float64)
         # draw image to black canvas
@@ -143,7 +143,7 @@ def color_framed_montages(image_list, image_shape, montage_shape, scores, cmap=p
         if type(img).__module__ != np.__name__:
             raise Exception('input of type {} is not a valid numpy array'.format(type(img)))
         start_new_img = False
-        img = resize(img, image_shape)
+        img = cv2.resize(img, image_shape)
         if img.dtype in (np.uint8, np.int) and img.max() > 1.0:  # float 0,1 image
             img = (img / 255.0).astype(np.float64)
         # draw image to black canvas
