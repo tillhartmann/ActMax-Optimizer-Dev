@@ -52,6 +52,9 @@ class ExperimentEvolution:
         self.savedir = savedir
         self.explabel = explabel
         self.Perturb_vec = []
+    
+    def get_model(self):
+        return self.CNNmodel.get_model()
 
     def run(self, init_code=None):
         """Same as Resized Evolution experiment"""
@@ -161,7 +164,9 @@ class ExperimentEvolution:
         return figh
 
 
-from skimage.transform import rescale, resize
+# from skimage.transform import rescale, resize
+from cv2 import resize
+
 def resize_and_pad_tsr(img_tsr, size, offset, canvas_size=(227, 227), scale=1.0):
     '''Resize and Pad a list of images to list of images
     Note this function is assuming the image is in (0,1) scale so padding with 0.5 as gray background.

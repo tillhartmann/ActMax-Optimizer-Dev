@@ -49,7 +49,7 @@ class TorchScorer:
         scores, activations = CNN.score(imgs)
 
     """
-    def __init__(self, model_name, imgpix=227, rawlayername=True, device="cuda"):
+    def __init__(self, model_name, imgpix=224, rawlayername=True, device="cuda"):
         self.imgpix = imgpix
         if isinstance(model_name, torch.nn.Module):
             self.model = model_name
@@ -111,6 +111,10 @@ class TorchScorer:
                 self.model = Cnet.module
                 self.inputsize = (3, imgpix, imgpix)
                 self.layername = None
+            elif 'vit' in model_name.lower():
+                self.inputsize = (3, imgpix, imgpix)
+                self.model = models.__dict__[model_name](pretrained=True) # same as e.g. models.vit_b_32 if model_name is vit_b_32
+                self.layername = None
             else:
                 raise NotImplementedError("Cannot find the specified model %s"%model_name)
         else:
@@ -133,6 +137,9 @@ class TorchScorer:
         self.recordings = {}
 
         self.activation = {}
+
+    def get_model(self):
+        return self.model
 
     def get_activation(self, name, unit=None, unitmask=None, ingraph=False):
         """
@@ -167,6 +174,8 @@ class TorchScorer:
                     self.activation[name] = out[:, unit[0], unit[1], unit[2]]
                 elif len(output.shape) == 2: 
                     self.activation[name] = out[:, unit[0]]
+                elif len(output.shape) == 3: # ViT
+                    self.activation[name] = out[:, unit[0], unit[1]]
 
         return hook
 
