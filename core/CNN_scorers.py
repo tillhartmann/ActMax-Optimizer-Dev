@@ -49,7 +49,7 @@ class TorchScorer:
         scores, activations = CNN.score(imgs)
 
     """
-    def __init__(self, model_name, imgpix=227, rawlayername=True, device="cuda"):
+    def __init__(self, model_name, imgpix=224, rawlayername=True, device="cuda"):
         self.imgpix = imgpix
         if isinstance(model_name, torch.nn.Module):
             self.model = model_name
@@ -111,6 +111,31 @@ class TorchScorer:
                 self.model = Cnet.module
                 self.inputsize = (3, imgpix, imgpix)
                 self.layername = None
+            elif 'vit' in model_name.lower():
+                self.inputsize = (3, imgpix, imgpix)
+                self.layername = None
+                if 'dino' in model_name.lower(): # load dino ViT
+                    import dino_vit as vits
+                    _, arch, patch_size  = model_name.split(':')
+                    patch_size = int(patch_size)
+                    model = vits.__dict__[arch](patch_size=patch_size, num_classes=0)
+                    if arch == "vit_small" and patch_size == 16:
+                        url = "dino_deitsmall16_pretrain/dino_deitsmall16_pretrain.pth"
+                    elif arch == "vit_small" and patch_size == 8:
+                        url = "dino_deitsmall8_300ep_pretrain/dino_deitsmall8_300ep_pretrain.pth"  # model used for visualizations in our paper
+                    elif arch == "vit_base" and patch_size == 16:
+                        url = "dino_vitbase16_pretrain/dino_vitbase16_pretrain.pth"
+                    elif arch == "vit_base" and patch_size == 8:
+                        url = "dino_vitbase8_pretrain/dino_vitbase8_pretrain.pth"
+                    if url is not None:
+                        print("Since no pretrained weights have been provided, we load the reference pretrained DINO weights.")
+                        state_dict = torch.hub.load_state_dict_from_url(url="https://dl.fbaipublicfiles.com/dino/" + url)
+                        model.load_state_dict(state_dict, strict=True)
+                    else:
+                        print("There is no reference weights available for this model => We use random weights.")
+                    self.model = model
+                else:
+                    self.model = models.__dict__[model_name](pretrained=True) # same as e.g. models.vit_b_32 if model_name is vit_b_32
             else:
                 raise NotImplementedError("Cannot find the specified model %s"%model_name)
         else:
@@ -133,6 +158,9 @@ class TorchScorer:
         self.recordings = {}
 
         self.activation = {}
+
+    def get_model(self):
+        return self.model
 
     def get_activation(self, name, unit=None, unitmask=None, ingraph=False):
         """
@@ -167,6 +195,8 @@ class TorchScorer:
                     self.activation[name] = out[:, unit[0], unit[1], unit[2]]
                 elif len(output.shape) == 2: 
                     self.activation[name] = out[:, unit[0]]
+                elif len(output.shape) == 3: # ViT
+                    self.activation[name] = out[:, unit[0], unit[1]]
 
         return hook
 
@@ -181,7 +211,7 @@ class TorchScorer:
             # if not, we need to parse the architecture of the network.
             # indexing is not available, we need to register by recursively visit the layers and find match.
             handle, modulelist, moduletype = register_hook_by_module_names(layer, self.get_activation(reckey, unit, ingraph=ingraph),
-                                self.model, self.inputsize, device="cuda")
+                                self.model, self.inputsize, device=self.device)
             self.hooks.extend(handle)  # handle here is a list.
         return handle
 
@@ -197,7 +227,7 @@ class TorchScorer:
             # if not, we need to parse the architecture of the network indexing is not available. 
             # we need to register by recursively visit the layers and find match.
             handle, modulelist, moduletype = register_hook_by_module_names(layer, 
-                self.get_activation(reckey, unitmask=unit_mask), self.model, self.inputsize, device="cuda")
+                self.get_activation(reckey, unitmask=unit_mask), self.model, self.inputsize, device=self.device)
             self.hooks.extend(handle)  # handle here is a list.
         return handle
     

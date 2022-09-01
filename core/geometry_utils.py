@@ -91,7 +91,7 @@ def radial_proj(codes, max_norm):
         return codes / code_norm[:, np.newaxis] * proj_norm[:, np.newaxis]
 
 def orthogonalize(basis, codes):
-    if len(basis.shape) is 1:
+    if len(basis.shape) == 1:
         basis = basis[np.newaxis, :]
     assert basis.shape[1] == codes.shape[1]
     unit_basis = basis / norm(basis)
